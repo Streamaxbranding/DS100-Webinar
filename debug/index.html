@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex"/>
+<title>DS100 Tracking Debug</title>
+<script>
+  window.dataLayer = window.dataLayer || [];
+</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-KCLRHBH9');</script>
+<style>
+:root{--bg:#000;--panel:#070a08;--text:#f6f8f2;--muted:#aeb7ab;--green:#aacc03;--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 70% 8%,rgba(170,204,3,.12),transparent 28%),#000;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{width:min(1100px,calc(100vw - 32px));margin:0 auto;padding:56px 0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:28px}
+.brand{font-weight:900;letter-spacing:.14em}
+.back{color:var(--muted);font-size:14px}
+h1{margin:0;font-size:clamp(38px,6vw,72px);line-height:.96;letter-spacing:-.06em}
+.lead{margin:14px 0 0;color:var(--muted);line-height:1.55}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0}
+button,.btn{height:44px;border:0;border-radius:999px;padding:0 18px;font-weight:850;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;background:var(--green);color:#071000}
+button.secondary,.btn.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border-radius:18px;padding:18px;min-width:0}
+.wide{grid-column:1/-1}
+.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.18em;font-weight:850}
+.value{margin-top:8px;font-size:16px;line-height:1.45;word-break:break-word}
+pre{margin:12px 0 0;white-space:pre-wrap;word-break:break-word;color:#dbe3d6;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;line-height:1.45;max-height:420px;overflow:auto}
+@media(max-width:760px){.top{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.wrap{padding-top:34px}}
+</style>
+</head>
+<body>
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KCLRHBH9"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<main class="wrap">
+  <div class="top">
+    <div class="brand">STREAMAX</div>
+    <a class="back" href="../">Back to Landing Page</a>
+  </div>
+  <h1>Tracking debug.</h1>
+  <p class="lead">Anonymous DS100 attribution and event state for local GTM/GA4 testing.</p>
+  <div class="actions">
+    <button type="button" id="refreshBtn">Refresh Debug Info</button>
+    <button type="button" class="secondary" id="clearBtn">Clear Tracking Storage</button>
+    <a class="btn secondary" href="../linkedin/">Test LinkedIn Entry</a>
+  </div>
+  <section class="grid" aria-live="polite">
+    <div class="card"><div class="label">source</div><div class="value" id="sourceValue"></div></div>
+    <div class="card"><div class="label">medium</div><div class="value" id="mediumValue"></div></div>
+    <div class="card"><div class="label">campaign</div><div class="value" id="campaignValue"></div></div>
+    <div class="card"><div class="label">content</div><div class="value" id="contentValue"></div></div>
+    <div class="card"><div class="label">referrer</div><div class="value" id="referrerValue"></div></div>
+    <div class="card"><div class="label">page_location</div><div class="value" id="pageLocationValue"></div></div>
+    <div class="card"><div class="label">first_landing_url</div><div class="value" id="firstLandingValue"></div></div>
+    <div class="card"><div class="label">first_visit_time</div><div class="value" id="firstVisitValue"></div></div>
+    <div class="card wide">
+      <div class="label">Current dataLayer events</div>
+      <pre id="dataLayerEvents"></pre>
+    </div>
+    <div class="card wide">
+      <div class="label">Session event history</div>
+      <pre id="eventHistory"></pre>
+    </div>
+    <div class="card wide">
+      <div class="label">Raw debug object</div>
+      <pre id="rawDebug"></pre>
+    </div>
+  </section>
+</main>
+<script>
+(function(){
+  const STORAGE_KEY = 'ds100_attribution';
+  const HISTORY_KEY = 'ds100_event_history';
+
+  function safeParse(json){
+    try { return JSON.parse(json || '{}') || {}; } catch(e){ return {}; }
+  }
+
+  function safeParseArray(json){
+    const parsed = safeParse(json || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  }
+
+  function getAttribution(){
+    return safeParse(localStorage.getItem(STORAGE_KEY));
+  }
+
+  function getEventNames(list){
+    return (list || []).map(function(item){ return item && item.event; }).filter(Boolean);
+  }
+
+  function buildDebug(){
+    const attribution = getAttribution();
+    const dataLayer = window.dataLayer || [];
+    const eventHistory = safeParseArray(sessionStorage.getItem(HISTORY_KEY));
+    return {
+      attribution: attribution,
+      dataLayer: dataLayer,
+      dataLayer_events: getEventNames(dataLayer),
+      event_history: eventHistory,
+      event_history_events: getEventNames(eventHistory),
+      current_url: window.location.href,
+      referrer: document.referrer || attribution.first_referrer || ''
+    };
+  }
+
+  function setText(id, value){
+    document.getElementById(id).textContent = value || '';
+  }
+
+  function render(){
+    const debug = buildDebug();
+    const attr = debug.attribution || {};
+    setText('sourceValue', attr.source || '');
+    setText('mediumValue', attr.medium || '');
+    setText('campaignValue', attr.campaign || '');
+    setText('contentValue', attr.content || '');
+    setText('referrerValue', debug.referrer || '');
+    setText('pageLocationValue', debug.current_url || '');
+    setText('firstLandingValue', attr.first_landing_url || '');
+    setText('firstVisitValue', attr.first_visit_time || '');
+    setText('dataLayerEvents', JSON.stringify(debug.dataLayer_events, null, 2));
+    setText('eventHistory', JSON.stringify(debug.event_history, null, 2));
+    setText('rawDebug', JSON.stringify(debug, null, 2));
+  }
+
+  window.DS100TrackingDebug = buildDebug;
+
+  document.getElementById('refreshBtn').addEventListener('click', render);
+  document.getElementById('clearBtn').addEventListener('click', function(){
+    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(HISTORY_KEY);
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
