@@ -10911,6 +10911,24 @@ check();
   }
 })();
 </script>
+<script id="ds100-linkedin-channel-forwarding-v1">
+document.addEventListener('DOMContentLoaded', function () {
+  document
+    .querySelectorAll('a[href^="https://www.streamax.com/"]')
+    .forEach(function (link) {
+      try {
+        const destination = new URL(link.href);
+
+        destination.searchParams.set('channel', 'Linkedin');
+
+        link.href = destination.toString();
+      } catch (error) {
+        // 忽略无法解析的链接，避免影响页面运行。
+      }
+    });
+});
+</script>
+
 <script type="text/javascript">
 _linkedin_partner_id = "9006116";
 window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
