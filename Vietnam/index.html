@@ -9722,6 +9722,13 @@ linear-gradient(to top,rgba(0,0,0,.90) 0%,rgba(0,0,0,.68) 42%,rgba(0,0,0,.40) 72
   #launch-agenda .agenda-highlight{grid-template-columns:1fr!important;gap:8px!important;padding:18px!important;border-radius:18px!important}
   #launch-agenda .agenda-highlight-text{font-size:15px!important}
 }
+
+@media (max-width:760px){
+  #launch-agenda .agenda-orbit{right:0!important;width:70vw!important;max-width:280px!important}
+}
+@media (max-width:420px){
+  #launch-agenda .agenda-orbit{width:64vw!important}
+}
 </style>
 </head>
 <body class="black_page">
@@ -11291,13 +11298,9 @@ check();
 })();
 </script>
 
-<script id="ds100-utm-forwarding-v1">
+<script id="ds100-utm-forwarding-v3">
 (function () {
-  const DEFAULT_UTM = {
-    "utm_source": "ds100_landing_page",
-    "utm_medium": "github_pages",
-    "utm_campaign": "ds100_launch_vietnam"
-};
+  'use strict';
 
   const UTM_KEYS = [
     'utm_source',
@@ -11305,45 +11308,222 @@ check();
     'utm_campaign'
   ];
 
-  const params = new URLSearchParams(window.location.search);
-  const tracking = Object.assign({}, DEFAULT_UTM);
+  /**
+   * 读取当前页面 URL 中真实存在的 UTM。
+   */
+  function getUtmFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const utm = {};
 
-  UTM_KEYS.forEach(function (key) {
-    const value = params.get(key);
-    if (value) {
-      tracking[key] = value;
+    UTM_KEYS.forEach(function (key) {
+      const value = params.get(key);
+
+      if (typeof value === 'string' && value.trim() !== '') {
+        utm[key] = value.trim();
+      }
+    });
+
+    return utm;
+  }
+
+  /**
+   * 将 UTM 分别保存为独立的 localStorage Key。
+   */
+  function saveUtm(utm) {
+    try {
+      // 删除旧版 JSON 存储，避免同时出现两套 UTM。
+      localStorage.removeItem('ds100_utm');
+
+      // 当前 URL 出现新 UTM 时，先清除旧 UTM，
+      // 避免不同 Campaign 的字段混合。
+      UTM_KEYS.forEach(function (key) {
+        localStorage.removeItem(key);
+      });
+
+      Object.keys(utm).forEach(function (key) {
+        localStorage.setItem(key, utm[key]);
+      });
+    } catch (error) {
+      // localStorage 不可用时，不中断页面功能。
     }
-  });
+  }
 
-  try {
-    localStorage.setItem('ds100_utm', JSON.stringify(tracking));
-  } catch (e) {}
+  /**
+   * 读取当前域名下已经保存的 UTM。
+   */
+  function getStoredUtm() {
+    const utm = {};
 
-  document.querySelectorAll('a[href]').forEach(function (link) {
-    const href = link.getAttribute('href');
+    try {
+      UTM_KEYS.forEach(function (key) {
+        const value = localStorage.getItem(key);
+
+        if (typeof value === 'string' && value.trim() !== '') {
+          utm[key] = value.trim();
+        }
+      });
+    } catch (error) {
+      return {};
+    }
+
+    return utm;
+  }
+
+  /**
+   * 当前 URL 有真实 UTM时，保存并使用当前 UTM；
+   * 当前 URL 没有 UTM时，读取同一域名下已有的缓存；
+   * 不生成任何默认值。
+   */
+  function getActiveUtm() {
+    const currentUtm = getUtmFromUrl();
+
+    if (Object.keys(currentUtm).length > 0) {
+      saveUtm(currentUtm);
+      return currentUtm;
+    }
+
+    return getStoredUtm();
+  }
+
+  function isStreamaxHostname(hostname) {
+    const normalizedHostname = String(hostname || '')
+      .trim()
+      .toLowerCase();
+
+    return (
+      normalizedHostname === 'streamax.com' ||
+      normalizedHostname.endsWith('.streamax.com')
+    );
+  }
+
+  function decorateStreamaxLink(link, activeUtm) {
+    if (!link || typeof link.getAttribute !== 'function') {
+      return;
+    }
+
+    const rawHref = link.getAttribute('href');
+
+    if (!rawHref) {
+      return;
+    }
+
+    const href = rawHref.trim();
+    const lowerHref = href.toLowerCase();
 
     if (
-      !href ||
+      href === '' ||
       href.startsWith('#') ||
-      href.startsWith('mailto:') ||
-      href.startsWith('tel:') ||
-      href.startsWith('javascript:')
+      lowerHref.startsWith('mailto:') ||
+      lowerHref.startsWith('tel:') ||
+      lowerHref.startsWith('javascript:') ||
+      lowerHref.startsWith('data:')
     ) {
       return;
     }
 
+    let targetUrl;
+
     try {
-      const url = new URL(href, window.location.href);
+      targetUrl = new URL(href, window.location.href);
+    } catch (error) {
+      return;
+    }
 
-      UTM_KEYS.forEach(function (key) {
-        if (tracking[key] && !url.searchParams.has(key)) {
-          url.searchParams.set(key, tracking[key]);
-        }
+    if (
+      targetUrl.protocol !== 'http:' &&
+      targetUrl.protocol !== 'https:'
+    ) {
+      return;
+    }
+
+    // 只向 Streamax 官网及其子域名透传。
+    if (!isStreamaxHostname(targetUrl.hostname)) {
+      return;
+    }
+
+    let changed = false;
+
+    UTM_KEYS.forEach(function (key) {
+      const value = activeUtm[key];
+
+      // 目标链接已有对应参数时，不覆盖。
+      if (value && !targetUrl.searchParams.has(key)) {
+        targetUrl.searchParams.set(key, value);
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      link.setAttribute('href', targetUrl.toString());
+    }
+  }
+
+  function decorateLinks(root, activeUtm) {
+    const scope =
+      root && typeof root.querySelectorAll === 'function'
+        ? root
+        : document;
+
+    scope.querySelectorAll('a[href]').forEach(function (link) {
+      decorateStreamaxLink(link, activeUtm);
+    });
+  }
+
+  const activeUtm = getActiveUtm();
+
+  // 没有真实 UTM，也没有已有缓存时，不修改任何链接。
+  if (Object.keys(activeUtm).length === 0) {
+    return;
+  }
+
+  // 处理页面加载时已有的链接。
+  decorateLinks(document, activeUtm);
+
+  // 兼容用户点击前动态更新的链接。
+  document.addEventListener(
+    'click',
+    function (event) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const link = target.closest('a[href]');
+
+      if (link) {
+        decorateStreamaxLink(link, activeUtm);
+      }
+    },
+    true
+  );
+
+  // 兼容后续动态插入的链接。
+  if (
+    document.body &&
+    typeof MutationObserver !== 'undefined'
+  ) {
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        mutation.addedNodes.forEach(function (node) {
+          if (!(node instanceof Element)) {
+            return;
+          }
+
+          if (node.matches && node.matches('a[href]')) {
+            decorateStreamaxLink(node, activeUtm);
+          }
+
+          decorateLinks(node, activeUtm);
+        });
       });
+    });
 
-      link.setAttribute('href', url.toString());
-    } catch (e) {}
-  });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
 })();
 </script>
 <script type="text/javascript">
