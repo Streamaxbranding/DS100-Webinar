@@ -11567,6 +11567,32 @@ check();
   }
 })();
 </script>
+<script id="ds100-linkedin-channel-forwarding-v2">
+document.addEventListener('DOMContentLoaded', function () {
+  // 将渠道信息写入当前落地页域名的 Local Storage
+  try {
+    localStorage.setItem('channel', 'Linkedin');
+  } catch (error) {
+    // Local Storage 不可用时，不影响链接跳转
+  }
+
+  // 给所有指定的 Streamax 官网链接增加 channel 参数
+  document
+    .querySelectorAll('a[href^="https://www.streamax.com/"]')
+    .forEach(function (link) {
+      try {
+        const destination = new URL(link.href);
+
+        destination.searchParams.set('channel', 'Linkedin');
+
+        link.href = destination.toString();
+      } catch (error) {
+        // 忽略无法解析的链接，避免影响页面运行
+      }
+    });
+});
+</script>
+
 <script type="text/javascript">
 _linkedin_partner_id = "9006116";
 window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
