@@ -9904,7 +9904,7 @@ linear-gradient(to top,rgba(0,0,0,.90) 0%,rgba(0,0,0,.68) 42%,rgba(0,0,0,.40) 72
 </div>
 </div>
 </div>
-<div class="actions"><a class="btn primary" href="https://events.zoom.us/ev/As2DHjmzRJ6Cf6whTk0x4thDdHcmeh9MDfBG7dAGB-d0rgfRW83P~AgzLk0UIQoWgnhdCSWiK8DofwC0HJKiRuL28_OLu55kmYPxhaMNXPoJWxQ" target="_blank" rel="noopener noreferrer">Đăng ký tham dự ra mắt</a></div>
+<div class="actions"><a class="btn primary" href="https://events.zoom.us/ev/As2DHjmzRJ6Cf6whTk0x4thDdHcmeh9MDfBG7dAGB-d0rgfRW83P~AvKanA0GOewt_grZUyC7Rm_Tpo8FWXPKxosPkhjr9lcBesiR1-WuIdrlJ1L0mIsPMnBelgl7Rt8vzZYgBFAna0vTmw" target="_blank" rel="noopener noreferrer">Đăng ký tham dự ra mắt</a></div>
 </div>
 </div>
 <div class="hero-scroll">Cuộn</div>
@@ -10168,7 +10168,7 @@ linear-gradient(to top,rgba(0,0,0,.90) 0%,rgba(0,0,0,.68) 42%,rgba(0,0,0,.40) 72
 <p>Xem DS100 phù hợp với đội xe của bạn như thế nào.</p>
 <div class="ending-actions">
 <a class="btn primary cinema-demo-btn" href="https://www.streamax.com/category/contactform.html"><span>Nhận demo</span><i aria-hidden="true">→</i></a>
-<a class="btn primary cinema-demo-btn cinema-register-btn" href="https://events.zoom.us/ev/As2DHjmzRJ6Cf6whTk0x4thDdHcmeh9MDfBG7dAGB-d0rgfRW83P~AgzLk0UIQoWgnhdCSWiK8DofwC0HJKiRuL28_OLu55kmYPxhaMNXPoJWxQ" target="_blank" rel="noopener noreferrer"><span>Đăng ký tham dự ra mắt</span><i aria-hidden="true">→</i></a></div>
+<a class="btn primary cinema-demo-btn cinema-register-btn" href="https://events.zoom.us/ev/As2DHjmzRJ6Cf6whTk0x4thDdHcmeh9MDfBG7dAGB-d0rgfRW83P~AvKanA0GOewt_grZUyC7Rm_Tpo8FWXPKxosPkhjr9lcBesiR1-WuIdrlJ1L0mIsPMnBelgl7Rt8vzZYgBFAna0vTmw" target="_blank" rel="noopener noreferrer"><span>Đăng ký tham dự ra mắt</span><i aria-hidden="true">→</i></a></div>
 </div>
 </div>
 </section>
@@ -11308,23 +11308,11 @@ check();
     'utm_campaign'
   ];
 
-  /**
-   * 读取当前页面 URL 中真实存在的 UTM。
-   */
-  function getUtmFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const utm = {};
-
-    UTM_KEYS.forEach(function (key) {
-      const value = params.get(key);
-
-      if (typeof value === 'string' && value.trim() !== '') {
-        utm[key] = value.trim();
-      }
-    });
-
-    return utm;
-  }
+  const FIXED_UTM = Object.freeze({
+    utm_source: 'linkedin',
+    utm_medium: 'paid-social',
+    utm_campaign: '2026 APAC II Campaign Group VIET'
+  });
 
   /**
    * 将 UTM 分别保存为独立的 localStorage Key。
@@ -11349,40 +11337,11 @@ check();
   }
 
   /**
-   * 读取当前域名下已经保存的 UTM。
-   */
-  function getStoredUtm() {
-    const utm = {};
-
-    try {
-      UTM_KEYS.forEach(function (key) {
-        const value = localStorage.getItem(key);
-
-        if (typeof value === 'string' && value.trim() !== '') {
-          utm[key] = value.trim();
-        }
-      });
-    } catch (error) {
-      return {};
-    }
-
-    return utm;
-  }
-
-  /**
-   * 当前 URL 有真实 UTM时，保存并使用当前 UTM；
-   * 当前 URL 没有 UTM时，读取同一域名下已有的缓存；
-   * 不生成任何默认值。
+   * 每次加载都保存并使用当前页面的固定 UTM。
    */
   function getActiveUtm() {
-    const currentUtm = getUtmFromUrl();
-
-    if (Object.keys(currentUtm).length > 0) {
-      saveUtm(currentUtm);
-      return currentUtm;
-    }
-
-    return getStoredUtm();
+    saveUtm(FIXED_UTM);
+    return FIXED_UTM;
   }
 
   function isStreamaxHostname(hostname) {
@@ -11446,8 +11405,8 @@ check();
     UTM_KEYS.forEach(function (key) {
       const value = activeUtm[key];
 
-      // 目标链接已有对应参数时，不覆盖。
-      if (value && !targetUrl.searchParams.has(key)) {
+      // 页面固定值拥有最高优先级。
+      if (value && targetUrl.searchParams.get(key) !== value) {
         targetUrl.searchParams.set(key, value);
         changed = true;
       }
