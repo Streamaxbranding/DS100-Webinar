@@ -9903,7 +9903,7 @@ linear-gradient(to top,rgba(0,0,0,.90) 0%,rgba(0,0,0,.68) 42%,rgba(0,0,0,.40) 72
 </div>
 </div>
 </div>
-<div class="actions"><a class="btn primary" href="https://events.zoom.us/ev/ApkBGNXTNS6WkPK_lz6gF1ZANFwTcQzVylaUL9u0Ar8yJ30RvW1i~AjHkZunHzDwo5-_H4IKuY8HYjQBE6IHqo-9xvsNsSBnDuUbSpazwh_ZUBA" target="_blank" rel="noopener noreferrer">Inscreva-se para o lançamento</a></div>
+<div class="actions"><a class="btn primary" href="https://events.zoom.us/ev/ApkBGNXTNS6WkPK_lz6gF1ZANFwTcQzVylaUL9u0Ar8yJ30RvW1i~Ahchjv0SpfZOd_EC-1xP3yRL0wK6gW6gRKRgFZDQc1t_u75Y7RTRD3pY3xBPClvnHqmdLaO3pesPUwhQpvP5END7tQ" target="_blank" rel="noopener noreferrer">Inscreva-se para o lançamento</a></div>
 </div>
 </div>
 <div class="hero-scroll">Rolar</div>
@@ -10167,7 +10167,7 @@ linear-gradient(to top,rgba(0,0,0,.90) 0%,rgba(0,0,0,.68) 42%,rgba(0,0,0,.40) 72
 <p>Veja como a DS100 se encaixa na sua frota.</p>
 <div class="ending-actions">
 <a class="btn primary cinema-demo-btn" href="https://www.streamax.com/category/contactform.html"><span>Solicitar demo</span><i aria-hidden="true">→</i></a>
-<a class="btn primary cinema-demo-btn cinema-register-btn" href="https://events.zoom.us/ev/ApkBGNXTNS6WkPK_lz6gF1ZANFwTcQzVylaUL9u0Ar8yJ30RvW1i~AjHkZunHzDwo5-_H4IKuY8HYjQBE6IHqo-9xvsNsSBnDuUbSpazwh_ZUBA" target="_blank" rel="noopener noreferrer"><span>Inscreva-se para o lançamento</span><i aria-hidden="true">→</i></a></div>
+<a class="btn primary cinema-demo-btn cinema-register-btn" href="https://events.zoom.us/ev/ApkBGNXTNS6WkPK_lz6gF1ZANFwTcQzVylaUL9u0Ar8yJ30RvW1i~Ahchjv0SpfZOd_EC-1xP3yRL0wK6gW6gRKRgFZDQc1t_u75Y7RTRD3pY3xBPClvnHqmdLaO3pesPUwhQpvP5END7tQ" target="_blank" rel="noopener noreferrer"><span>Inscreva-se para o lançamento</span><i aria-hidden="true">→</i></a></div>
 </div>
 </div>
 </section>
@@ -11307,23 +11307,11 @@ check();
     'utm_campaign'
   ];
 
-  /**
-   * 读取当前页面 URL 中真实存在的 UTM。
-   */
-  function getUtmFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    const utm = {};
-
-    UTM_KEYS.forEach(function (key) {
-      const value = params.get(key);
-
-      if (typeof value === 'string' && value.trim() !== '') {
-        utm[key] = value.trim();
-      }
-    });
-
-    return utm;
-  }
+  const FIXED_UTM = Object.freeze({
+    utm_source: 'linkedin',
+    utm_medium: 'paid-social',
+    utm_campaign: '2026 Latam Campaign Group PT'
+  });
 
   /**
    * 将 UTM 分别保存为独立的 localStorage Key。
@@ -11348,40 +11336,11 @@ check();
   }
 
   /**
-   * 读取当前域名下已经保存的 UTM。
-   */
-  function getStoredUtm() {
-    const utm = {};
-
-    try {
-      UTM_KEYS.forEach(function (key) {
-        const value = localStorage.getItem(key);
-
-        if (typeof value === 'string' && value.trim() !== '') {
-          utm[key] = value.trim();
-        }
-      });
-    } catch (error) {
-      return {};
-    }
-
-    return utm;
-  }
-
-  /**
-   * 当前 URL 有真实 UTM时，保存并使用当前 UTM；
-   * 当前 URL 没有 UTM时，读取同一域名下已有的缓存；
-   * 不生成任何默认值。
+   * 每次加载都保存并使用当前页面的固定 UTM。
    */
   function getActiveUtm() {
-    const currentUtm = getUtmFromUrl();
-
-    if (Object.keys(currentUtm).length > 0) {
-      saveUtm(currentUtm);
-      return currentUtm;
-    }
-
-    return getStoredUtm();
+    saveUtm(FIXED_UTM);
+    return FIXED_UTM;
   }
 
   function isStreamaxHostname(hostname) {
@@ -11445,8 +11404,8 @@ check();
     UTM_KEYS.forEach(function (key) {
       const value = activeUtm[key];
 
-      // 目标链接已有对应参数时，不覆盖。
-      if (value && !targetUrl.searchParams.has(key)) {
+      // 页面固定值拥有最高优先级。
+      if (value && targetUrl.searchParams.get(key) !== value) {
         targetUrl.searchParams.set(key, value);
         changed = true;
       }
