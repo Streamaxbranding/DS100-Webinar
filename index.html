@@ -10887,6 +10887,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const destination = new URL(link.href);
 
         destination.searchParams.set('channel', 'Linkedin');
+        destination.searchParams.set('utmcampaign','2026 Global Campaign Group')
 
         link.href = destination.toString();
       } catch (error) {
