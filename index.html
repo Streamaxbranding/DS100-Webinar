@@ -6753,6 +6753,17 @@ color: rgba(241,247,237,.80) !important;
 
 #demo-end .ending-actions {
 margin-top: 4px !important;
+gap: 14px !important;
+flex-wrap: wrap !important;
+}
+
+#demo-end .ending-actions .btn {
+height: 50px !important;
+min-width: 0 !important;
+padding: 0 25px !important;
+margin-left: 0 !important;
+margin-right: 0 !important;
+font-size: 14px !important;
 }
 
 #demo-end .cinema-demo-btn {
@@ -9339,6 +9350,7 @@ linear-gradient(to top,rgba(0,0,0,.90) 0%,rgba(0,0,0,.68) 42%,rgba(0,0,0,.40) 72
 <p>See how DS100 fits your fleet.</p>
 <div class="ending-actions">
 <a class="btn primary cinema-demo-btn" href="https://www.streamax.com/category/contactform.html"><span>Get the Demo</span><i aria-hidden="true">→</i></a>
+<a class="btn primary cinema-demo-btn" href="#launch-agenda">Join the Launch</a>
 </div>
 </div>
 </div>
@@ -10895,6 +10907,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const destination = new URL(link.href);
 
         destination.searchParams.set('channel', 'Linkedin');
+        destination.searchParams.set('utm_campaign', '2026 Global Campaign Group');
 
         link.href = destination.toString();
       } catch (error) {
